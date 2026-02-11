@@ -1,6 +1,6 @@
 # import the socket module
 import pygame
-from board import ChessBoard
+from Board import ChessBoard
 from UserInterface import UserInterface, PonderThread
 import chess
 import socket
