@@ -1,6 +1,6 @@
 # Created and Developed by : Loay Egbaria
 
-# This file implements the server that will handle the communication between the two agents (clients).
+# server that will handle the communication between the two agents (clients).
 # The server will wait for two clients to connect, then it will relay messages between them according to the protocol.
 
 import socket

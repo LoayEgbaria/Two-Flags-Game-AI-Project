@@ -1,3 +1,9 @@
+# Created and Developed by : Loay Egbaria
+
+# UserInterface class to handle the game logic and display using pygame.
+# It uses the ChessBoard class to represent the game state and implements the minimax algorithm with alpha-beta pruning, iterative deepening, move ordering, and a transposition table for optimization.
+
+
 import pygame
 import random
 import math

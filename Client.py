@@ -1,3 +1,9 @@
+# Created and Developed by : Loay Egbaria
+
+# client that will connect to the server and play the game according to the protocol.
+# The client will use the ChessBoard class to represent the game state and the UserInterface class to handle the game logic and display.
+
+
 import pygame
 from Board import ChessBoard
 from UserInterface import UserInterface, PonderThread
@@ -11,22 +17,22 @@ global UI
 
 time = 0
 color = None
-move_number = 0  # Track move count for the log file
-log_file = open("game_log.moves", "w", encoding="utf-8")
+move_number = 0  # track move number for logging
+log_file = open("game_log.moves", "w", encoding="utf-8")  # create move log file
 log_file.write("# Two Flags Game - Move Log\n")
 log_file.write("# Format: Move | Color | Algebraic | Score | Depth\n")
 log_file.write("-" * 55 + "\n")
 log_file.flush()
 
 socketObject = socket.socket()
-socketObject.connect(("localhost", 9999))
+socketObject.connect(("localhost", 9999))  # connect to server
 
 pygame.init()
 surface = pygame.display.set_mode([600, 600], 0, 0)
 pygame.display.set_caption('Pawn Game')
 Board = ChessBoard()
 UI = UserInterface(surface, Board)
-UI.human = False
+UI.human = False  # default AI mode
 
 def log_move(color_label, move_algebraic, score, depth):
     """Write a move to the game_log.moves file"""
@@ -41,18 +47,18 @@ def process_message(data):
     print("Processing:", data)
 
     if data == "Connected to the server":
-        socketObject.send("OK\n".encode())
+        socketObject.send("OK\n".encode())  # handshake confirmation
 
     elif data.startswith("Time"):
         parts = data.split()
-        time = int(parts[1]) * 60
+        time = int(parts[1]) * 60  # convert minutes to seconds
         UI.time = time
-        UI.chessboard.round = int(time / 16)
+        UI.chessboard.round = int(time / 16)  # simple round estimate
         socketObject.send("OK\n".encode())
 
     elif data == "Begin":
         human = input("Do you want to play as a human(h) or AI (a)? ").strip().lower()
-        UI.human = (human == "h")
+        UI.human = (human == "h")  # set play mode
         socketObject.send("OK\n".encode())
 
     elif data == "White":
@@ -68,6 +74,7 @@ def process_message(data):
         log_file.flush()
 
     elif data == "Classic":
+        # reset board to standard starting position
         UI.chessboard.boardArray = [[" " for _ in range(8)] for _ in range(8)]
         UI.chessboard.boardArray[1] = ["p"] * 8
         UI.chessboard.boardArray[6] = ["P"] * 8
@@ -80,10 +87,14 @@ def process_message(data):
     elif data.startswith("Setup"):
         tokens = data.split()
         pawn_num = 0
+
+        # clear board
         for row in range(8):
             for col in range(8):
                 pygame.event.pump()
                 UI.chessboard.boardArray[row][col] = " "
+
+        # place pawns according to setup string
         for token in tokens[1:]:
             pygame.event.pump()
             side = token[0]
@@ -95,14 +106,16 @@ def process_message(data):
             else:
                 UI.chessboard.boardArray[row][col] = "p"
             pawn_num += 1
+
         if pawn_num > 0 and time > 0:
-            UI.chessboard.round = int(time / pawn_num)
+            UI.chessboard.round = int(time / pawn_num)  # adjust round estimate
+
         UI.drawComponent()
         log_file.write(f"# Setup: {data}\n")
         log_file.flush()
 
     elif data == "Your turn":
-        move_data, flag = UI.clientMove()
+        move_data, flag = UI.clientMove()  # compute our move
 
         if flag == 1:
             msg = "Win\n"
@@ -116,7 +129,7 @@ def process_message(data):
             print("No best move found")
             msg = "exit\n"
         else:
-            # Convert internal format → algebraic (e.g. e2e4)
+            # convert internal move format to algebraic (e.g. e2e4)
             alg_move = ""
             alg_move += str(chr(97 + int(move_data[1])))
             alg_move += str(8 - int(move_data[0]))
@@ -124,13 +137,14 @@ def process_message(data):
             alg_move += str(8 - int(move_data[2]))
             msg = alg_move + "\n"
 
-            # Log it — grab last depth/score from UI's last search
+            # log our move
             color_label = "White" if UI.playercolor == "W" else "Black"
             log_move(color_label, alg_move, "our turn", UI.search_depth)
 
-        socketObject.send(msg.encode())
+        socketObject.send(msg.encode())  # send move to server
 
     elif data in ["White's turn", "Black's turn"]:
+        # start pondering during opponent turn
         if UI.playercolor is not None:
             if ((UI.playercolor == "W" and data == "Black's turn") or
                     (UI.playercolor == "B" and data == "White's turn")):
@@ -148,23 +162,25 @@ def process_message(data):
         sys.exit(0)
 
     else:
-        # Opponent move (e.g. "e2e4")
+        # opponent move (e.g. e2e4)
         if (len(data) == 4
                 and data[0].isalpha() and data[1].isdigit()
                 and data[2].isalpha() and data[3].isdigit()):
 
-            # Log opponent move
             opp_label = "Black" if UI.playercolor == "W" else "White"
-            log_move(opp_label, data, "opponent", "-")
+            log_move(opp_label, data, "opponent", "-")  # log opponent move
 
+            # convert algebraic to internal format
             move = ""
             move += str(8 - int(data[1]))
             move += str(ord(data[0]) - 97)
             move += str(8 - int(data[3]))
             move += str(ord(data[2]) - 97)
+
             if abs(int(move[0]) - int(move[2])) == 2:
                 UI.chessboard.enpassant = True
                 UI.chessboard.enpassantCol = int(move[3])
+
             UI.chessboard.changePerspective()
             UI.chessboard.computeMove(move, "opponent")
             UI.chessboard.changePerspective()
@@ -176,7 +192,7 @@ def process_message(data):
 buffer = ""
 try:
     while True:
-        received = socketObject.recv(1024)
+        received = socketObject.recv(1024)  # receive raw data
         if not received:
             break
         received = received.decode()
