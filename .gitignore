@@ -6,6 +6,13 @@ server.spec
 
 
 
+# Ignore these type of files
+# (These are files for Submission only)
+*.docx
+*.zip
+AiProject_LoayEgbaria.pdf
+
+
 
 
 
