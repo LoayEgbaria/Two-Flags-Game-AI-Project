@@ -3,16 +3,13 @@
 # UserInterface class to handle the game logic and display using pygame.
 # It uses the ChessBoard class to represent the game state and implements the minimax algorithm with alpha-beta pruning, iterative deepening, move ordering, and a transposition table for optimization.
 
+
 import pygame
 import random
 import math
 import time
 import threading
 
-
-def _safe_pump():
-    if threading.current_thread() is threading.main_thread():
-        pygame.event.pump()
 
 ZOBRIST_TABLE = {}
 for row in range(8):
@@ -55,8 +52,12 @@ class UserInterface:
         if int(move[1]) - int(move[3]) in (2, -2):
             self.chessboard.enpassant = True
             self.chessboard.enpassantCol = int(move[0])
-        # Own move — board already in correct perspective, use mode=0
-        self.chessboard.computeMove(move, 0)
+        self.chessboard.changePerspective()
+        self.chessboard.computeMove(move, "opponent")
+        self.chessboard.changePerspective()
+        
+        #self.chessboard.computeMove(move, 0)
+        
         self.drawComponent()
         return move, 0
 
@@ -100,6 +101,7 @@ class UserInterface:
 
         for row in range(8):
             for col in range(8):
+                pygame.event.pump()
                 piece = board.boardArray[row][col]
                 # For White pawns:
                 if piece == "P":
@@ -211,7 +213,7 @@ class UserInterface:
         if maximizingPlayer:
             maxEval = -math.inf
             for move in legal_moves:
-                _safe_pump()
+                pygame.event.pump()
                 new_board = self.clone_board(board)
                 new_board.computeMove(move, 0)
                 eval_score, _ = self.minimax(new_board, depth - 1, alpha, beta, False, color)
@@ -227,7 +229,7 @@ class UserInterface:
         else:
             minEval = math.inf
             for move in legal_moves:
-                _safe_pump()
+                pygame.event.pump()
                 new_board = self.clone_board(board)
                 new_board.computeMove(move, 0)
                 eval_score, _ = self.minimax(new_board, depth - 1, alpha, beta, True, color)
@@ -281,7 +283,6 @@ class UserInterface:
         new_board.boardArray = [row[:] for row in board.boardArray]
         new_board.enpassant = board.enpassant
         new_board.enpassantCol = board.enpassantCol
-        new_board.enpassantRow = board.enpassantRow
         new_board.round = board.round
         return new_board
 
@@ -313,7 +314,7 @@ class UserInterface:
         best_move = None
         start_time = time.time()
         for depth in range(1, max_depth + 1):
-            _safe_pump()
+            pygame.event.pump()
             if time.time() - start_time > time_limit:
                 print("Time limit reached at depth", depth)
                 break
@@ -350,14 +351,14 @@ class UserInterface:
                 if pondered_move in legal_moves:
                     # Evaluate the pondered move on a clone of the current board.
                     board_clone = self.clone_board(self.chessboard)
-                    board_clone.computeMove(pondered_move, 0)
+                    board_clone.computeMove(pondered_move, self.playercolor)
                     pondered_eval = self.heuristic(board_clone, self.playercolor)
                     
                     # Run a shallow iterative deepening search on the current board.
                     candidate_move = self.iterative_deepening(self.chessboard, self.playercolor, max_depth=5, time_limit=2)
                     if candidate_move is not None:
                         candidate_clone = self.clone_board(self.chessboard)
-                        candidate_clone.computeMove(candidate_move, 0)
+                        candidate_clone.computeMove(candidate_move, self.playercolor)
                         candidate_eval = self.heuristic(candidate_clone, self.playercolor)
                         # Define a threshold delta.
                         delta = 20  
@@ -378,8 +379,10 @@ class UserInterface:
                 return ("exit", -1)
             
             # Apply the chosen move and update the board.
-            # mode=0 means "own move" — board is already in correct perspective
-            self.chessboard.computeMove(best_move, 0)
+            self.chessboard.computeMove(best_move, self.playercolor)
+            
+            #self.chessboard.computeMove(best_move, 0)
+            
             self.drawComponent()
             return (best_move, 0)
 
@@ -390,7 +393,7 @@ class PonderThread(threading.Thread):
     def __init__(self, ui, board, color, max_depth=10, time_limit=10):
         threading.Thread.__init__(self)
         self.ui = ui
-        # Make a clone of the board state so that pondering isnt affected by changes.
+        # Make a clone of the board state so that pondering isn’t affected by changes.
         self.board = ui.clone_board(board)
         self.color = color
         self.max_depth = max_depth

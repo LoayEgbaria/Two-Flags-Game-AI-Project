@@ -3,6 +3,7 @@
 # ChessBoard class to represent the game board and handle moves
 # The board is represented as an 8x8 array, with "P" for white pawns, "p" for black pawns, and " " for empty squares.
 
+
 class ChessBoard:
     def __init__(self):
         self.boardArray = [[" " for _ in range(8)] for _ in range(8)]    # Creating an empty board
@@ -10,7 +11,6 @@ class ChessBoard:
         self.boardArray[6] = ["P"] * 8
         self.enpassant = False  # Flag and col for enpassant
         self.enpassantCol = -1
-        self.enpassantRow = -1  # Row of the pawn that can be captured en passant
         self.round = 0  # Round duration
 
     def changePerspective(self):
