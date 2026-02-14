@@ -11,33 +11,45 @@ import pygame
 global time
 global boardArray
 
-clients = []  # list to store the two connected clients
-
+clients = []
 # Create a server socket
+
 serverSocket = socket.socket()
+
 print("Server socket created")
 
 # Associate the server socket with the IP and Port
+
 ip = "127.0.0.1"
+
 port = 9999
-serverSocket.bind((ip, port))  # bind server to localhost and port 9999
+
+serverSocket.bind((ip, port))
+
 print("Server socket bound with with ip {} port {}".format(ip, port))
 
 # Make the server listen for incoming connections
+
 serverSocket.listen()
 
 # Server incoming connections "one by one"
+
 count = 0
 
 while (True):
 
     # wait for the two agents to connect
+
     (clientConnection, clientAddress) = serverSocket.accept()
+
     count = count + 1
+
     clients.append(clientConnection)
 
     (clientConnection, clientAddress) = serverSocket.accept()
+
     count = count + 1
+
     clients.append(clientConnection)
 
     print("Accepted {} connections".format(count))
@@ -46,109 +58,117 @@ while (True):
 
     clients[0].send(msg)
     clients[1].send(msg)
-
-    # waiting for OK from both clients
+    #DODIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
     data = clients[0].recv(1024)
     data.decode()
     data = clients[1].recv(1024)
     data.decode()
 
     # send Time x to clients
-    time = input() + "\n"  # server manually enters time command
+    time = input() + "\n"
     time = str.encode(time)
     clients[0].send(time)
     clients[1].send(time)
     
-    # waiting again for OK from both clients
+    #DODIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
     data = clients[0].recv(1024)
     data.decode()
     data = clients[1].recv(1024)
     data.decode()
 
+
     # send Begin to clients
-    msg = input() + "\n"  # usually "Begin"
+    msg = input() + "\n"
     msg = str.encode(msg)
     clients[0].send(msg)
     clients[1].send(msg)
 
-    # assign colors
     msg = str.encode("White\n")
     clients[0].send(msg)
     msg = str.encode("Black\n")
     clients[1].send(msg)
 
-    # Classic for normal board, SETUP otherwise
-    msg = input() + "\n"  # setup command if needed
+    # Classic for normal board, SETUP (ends with either BLACK/WHITE) otherwise
+    msg = input() + "\n"
     msg = str.encode(msg)
     clients[0].send(msg)
     clients[1].send(msg)
 
     msg = msg.decode()
     if msg.endswith("Black"):
-        player_index = 1  # black starts
+        player_index = 1
         msg = msg.encode()
     elif msg.endswith("White"):
-        player_index = 0  # white starts
+        player_index = 0
         msg = msg.encode()
     else:
-        player_index = 0  # default white starts
+        player_index = 0
 
-    # main game loop
+    def safe_send(sock, msg):
+        try:
+            sock.send(msg)
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError):
+            pass
+
+    # read from client connection
     while (True):
 
-       if player_index == 0:
-           msg = str.encode("White's turn\n")
-           clients[1].send(msg)
-       else:
-           msg = str.encode("Black's turn\n")
-           clients[0].send(msg)
+       try:
+           if player_index == 0:
+               msg = str.encode("White's turn\n")
+               clients[1].send(msg)
+           else:
+               msg = str.encode("Black's turn\n")
+               clients[0].send(msg)
 
-       msg = str.encode("Your turn\n")
-       clients[player_index].send(msg)
+           msg = str.encode("Your turn\n")
+           clients[player_index].send(msg)
+           data = clients[player_index].recv(1024)
 
-       data = clients[player_index].recv(1024)  # receive move from current player
+       except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+           print(f"Client disconnected unexpectedly: {e}")
+           other = 1 - player_index
+           safe_send(clients[other], str.encode("exit\n"))
+           break
 
        if (data != b''):
 
             data = data.decode()
-
-            if data == "exit\n":  # player wants to quit
-                msg1Bytes = str.encode("exit\n")
-                clients[0].send(msg1Bytes)
-                clients[1].send(msg1Bytes)
+            if data == "exit\n":
+                safe_send(clients[0], str.encode("exit\n"))
+                safe_send(clients[1], str.encode("exit\n"))
                 print("agent wants to end the game.")
                 print("Connection closed")
                 break
 
-            if data == "Win\n":  # player declares win
+            if data == "Win\n":
                 if player_index:
                     print("Black player won")
                 else:
                     print("White player won")
-                msg1Bytes = str.encode("exit\n")
-                clients[0].send(msg1Bytes)
-                clients[1].send(msg1Bytes)
+                safe_send(clients[0], str.encode("exit\n"))
+                safe_send(clients[1], str.encode("exit\n"))
                 break
 
-            if data == "Lost\n":  # player declares loss
+            if data == "Lost\n":
                 if player_index:
                     print("Black player won")
                 else:
                     print("White player won")
-                msg1Bytes = str.encode("exit\n")
-                clients[0].send(msg1Bytes)
-                clients[1].send(msg1Bytes)
+                safe_send(clients[0], str.encode("exit\n"))
+                safe_send(clients[1], str.encode("exit\n"))
                 break
 
             data = data.encode()
-            msg = data  # forward move to opponent
-
-            # switch turns
+            msg = data
             if(player_index==0):
                 player_index=1
             else:
                 player_index=0
-
-            clients[player_index].send(msg)  # send move to other player
-
-    break  # end after one match
+            try:
+                clients[player_index].send(msg)
+            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
+                print(f"Failed to send move to client: {e}")
+                safe_send(clients[1 - player_index], str.encode("exit\n"))
+                break
+    break

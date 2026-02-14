@@ -1,0 +1,33 @@
+# Two Flags Game - Move Log
+# Format: Move | Color | Algebraic | Score | Depth
+-------------------------------------------------------
+# Playing as: White
+# Setup: Classic
+Move   1 | Black  | a7a5  | Score: our turn | Depth: 10
+Move   2 | White  | a2a4  | Score: our turn | Depth: 10
+Move   3 | Black  | a7a5  | Score: opponent | Depth: -
+Move   4 | White  | b2b3  | Score: our turn | Depth: 10Move   5 | Black  | d7d5  | Score: our turn | Depth: 10
+Move   6 | White  | d2d4  | Score: our turn | Depth: 10Move   7 | Black  | e7e5  | Score: our turn | Depth: 10
+Move   8 | White  | e2e4  | Score: our turn | Depth: 10Move   9 | Black  | g7g5  | Score: our turn | Depth: 10
+Move  10 | White  | e2e4  | Score: opponent | Depth: -
+Move  11 | Black  | f7f5  | Score: our turn | Depth: 10
+Move  12 | White  | f2f4  | Score: opponent | Depth: -
+Move  13 | Black  | b5b4  | Score: our turn | Depth: 10
+Move  14 | White  | h2h4  | Score: opponent | Depth: -
+Move  15 | Black  | g5g4  | Score: our turn | Depth: 10
+Move  16 | White  | b3b4  | Score: opponent | Depth: -
+Move  17 | Black  | c6c5  | Score: our turn | Depth: 10
+Move  18 | White  | g4g5  | Score: opponent | Depth: -
+Move  19 | Black  | h5h4  | Score: our turn | Depth: 10
+Move  20 | White  | h4h5  | Score: opponent | Depth: -
+Move  21 | Black  | b4b3  | Score: our turn | Depth: 10
+Move  22 | White  | c4c5  | Score: opponent | Depth: -
+Move  23 | Black  | b3c2  | Score: our turn | Depth: 10
+Move  24 | White  | b5b6  | Score: opponent | Depth: -
+Move  25 | Black  | c2c1  | Score: our turn | Depth: 10
+Move  26 | White  | c5c6  | Score: opponent | Depth: -
+# Result: LOST
+Move  27 | White  | c6d7  | Score: opponeMove  28 | Whit# Result: LOST
+# Session ended.
+th: 10
+# Session ended.

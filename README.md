@@ -1,21 +1,3 @@
-# AI Project : Two Flags Game
-Two Flags Game with ai and clients, server.
-
-
-To create .exe files, run this in terminal:
-python -m PyInstaller --onefile server.py
-python -m PyInstaller --onefile client.py
-
-
-python -m PyInstaller --onefile --distpath . server.py
-python -m PyInstaller --onefile --distpath . client.py
-
-
-python -m PyInstaller --onefile --distpath . --clean server.py
-python -m PyInstaller --onefile --distpath . --clean client.py
-
-
-
 
 # 🏁 Two Flags Game — AI Agent
 # משחק שני דגלים — סוכן בינה מלאכותית

@@ -1,0 +1,14 @@
+These are commands for Terminal, to run and create files (such as .exe) :
+
+
+To create .exe files, run this in terminal:
+python -m PyInstaller --onefile server.py
+python -m PyInstaller --onefile client.py
+
+or this :
+python -m PyInstaller --onefile --distpath . server.py
+python -m PyInstaller --onefile --distpath . client.py
+
+with no extra files :
+python -m PyInstaller --onefile --distpath . --clean server.py
+python -m PyInstaller --onefile --distpath . --clean client.py
