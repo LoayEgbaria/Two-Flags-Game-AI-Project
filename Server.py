@@ -8,10 +8,29 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.messagebox
 import pygame
+from datetime import datetime
+
 global time
 global boardArray
 
 clients = []
+
+# CREATE ONE SHARED MOVES FILE
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+moves_file = open(f"game_{timestamp}.moves", "w")
+moves_file.write(f"Game started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+moves_file.write("=" * 50 + "\n\n")
+move_counter = 0
+
+def write_move(player, move, score=None):
+    global move_counter
+    move_counter += 1
+    moves_file.write(f"Move {move_counter}: {player} - {move}")
+    if score is not None:
+        moves_file.write(f" (Score: {score})")
+    moves_file.write("\n")
+    moves_file.flush()
+
 # Create a server socket
 
 serverSocket = socket.socket()
@@ -66,6 +85,7 @@ while (True):
 
     # send Time x to clients
     time = input() + "\n"
+    moves_file.write(f"Time: {time.strip()} minutes\n")
     time = str.encode(time)
     clients[0].send(time)
     clients[1].send(time)
@@ -85,12 +105,16 @@ while (True):
 
     msg = str.encode("White\n")
     clients[0].send(msg)
+    moves_file.write("White: Player 1\n")
+    
     msg = str.encode("Black\n")
     clients[1].send(msg)
+    moves_file.write("Black: Player 2\n")
 
     # Classic for normal board, SETUP (ends with either BLACK/WHITE) otherwise
-    msg = input() + "\n"
-    msg = str.encode(msg)
+    setup = input() + "\n"
+    moves_file.write(f"Setup: {setup.strip()}\n\n")
+    msg = str.encode(setup)
     clients[0].send(msg)
     clients[1].send(msg)
 
@@ -104,60 +128,67 @@ while (True):
     else:
         player_index = 0
 
-    def safe_send(sock, msg):
-        try:
-            sock.send(msg)
-        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError):
-            pass
-
     # read from client connection
     while (True):
 
-       try:
-           if player_index == 0:
-               msg = str.encode("White's turn\n")
-               clients[1].send(msg)
-           else:
-               msg = str.encode("Black's turn\n")
-               clients[0].send(msg)
+       if player_index == 0:
+           msg = str.encode("White's turn\n")
+           clients[1].send(msg)
+       else:
+           msg = str.encode("Black's turn\n")
+           clients[0].send(msg)
 
-           msg = str.encode("Your turn\n")
-           clients[player_index].send(msg)
-           data = clients[player_index].recv(1024)
-
-       except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
-           print(f"Client disconnected unexpectedly: {e}")
-           other = 1 - player_index
-           safe_send(clients[other], str.encode("exit\n"))
-           break
+       msg = str.encode("Your turn\n")
+       clients[player_index].send(msg)
+       data = clients[player_index].recv(1024)
 
        if (data != b''):
 
             data = data.decode()
             if data == "exit\n":
-                safe_send(clients[0], str.encode("exit\n"))
-                safe_send(clients[1], str.encode("exit\n"))
+                msg1Bytes = str.encode("exit\n")
+                clients[0].send(msg1Bytes)
+                clients[1].send(msg1Bytes)
                 print("agent wants to end the game.")
                 print("Connection closed")
+                moves_file.write("\n" + "=" * 50 + "\n")
+                moves_file.write(f"Game ended at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                moves_file.close()
                 break
 
             if data == "Win\n":
                 if player_index:
                     print("Black player won")
+                    moves_file.write("\nBlack wins!\n")
                 else:
                     print("White player won")
-                safe_send(clients[0], str.encode("exit\n"))
-                safe_send(clients[1], str.encode("exit\n"))
+                    moves_file.write("\nWhite wins!\n")
+                msg1Bytes = str.encode("exit\n")
+                clients[0].send(msg1Bytes)
+                clients[1].send(msg1Bytes)
+                moves_file.write("\n" + "=" * 50 + "\n")
+                moves_file.write(f"Game ended at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                moves_file.close()
                 break
 
             if data == "Lost\n":
                 if player_index:
                     print("Black player won")
+                    moves_file.write("\nBlack wins!\n")
                 else:
                     print("White player won")
-                safe_send(clients[0], str.encode("exit\n"))
-                safe_send(clients[1], str.encode("exit\n"))
+                    moves_file.write("\nWhite wins!\n")
+                msg1Bytes = str.encode("exit\n")
+                clients[0].send(msg1Bytes)
+                clients[1].send(msg1Bytes)
+                moves_file.write("\n" + "=" * 50 + "\n")
+                moves_file.write(f"Game ended at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                moves_file.close()
                 break
+
+            # LOG THE MOVE TO SHARED FILE
+            player_name = "White" if player_index == 0 else "Black"
+            write_move(player_name, data.strip())
 
             data = data.encode()
             msg = data
@@ -165,10 +196,5 @@ while (True):
                 player_index=1
             else:
                 player_index=0
-            try:
-                clients[player_index].send(msg)
-            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError) as e:
-                print(f"Failed to send move to client: {e}")
-                safe_send(clients[1 - player_index], str.encode("exit\n"))
-                break
+            clients[player_index].send(msg)
     break
